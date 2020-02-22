@@ -48,7 +48,7 @@ def verify_pw(username,password):
     if not user_exist(username):
         return False
 
-    hashed_pw = username.find({
+    hashed_pw = users.find({
         "username":username
     })[0]["password"]
 
@@ -67,7 +67,7 @@ class Detect(Resource):
         username = posted_data["username"]
         password = posted_data["password"]
         text1 = posted_data["text1"]
-        text1 = posted_data["text2"]
+        text2 = posted_data["text2"]
 
         if not user_exist(username):
             ret_json = {
@@ -123,3 +123,47 @@ class Detect(Resource):
         })
 
         return jsonify(ret_json)
+
+class Refill(Resource):
+    def post(self):
+        posted_data = request.get_json()
+
+        username = posted_data["username"]
+        password = posted_data["admin_pw"]
+        refill_amount = posted_data["refill"]
+
+        if not user_exist(username):
+            ret_json = {
+                "status":301,
+                "msg":"Invalid Username"
+            }
+            return jsonify(ret_json)
+
+        correct_pw = "abc123"
+        if not password == correct_pw:
+            ret_json = {
+                "status":304,
+                "msg":"Invalid Admin Password"
+            }
+            return jsonify(ret_json)
+
+        users.update({
+            "username":username
+        },{
+            "$set":{
+                "tokens":refill_amount
+            }
+        })
+
+        ret_json = {
+            "status":200,
+            "msg":"Refilled successfully"
+        }
+        return jsonify(ret_json)
+
+api.add_resource(Register,'/register')
+api.add_resource(Detect  ,'/detect')
+api.add_resource(Refill  ,'/refill')
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0',debug=True)
